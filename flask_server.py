@@ -29,8 +29,8 @@ def main():
     pass
 
 
-@app.route('/user/<string:login>')
-def user_show(login:str):
+@app.route('/user/<int:id>')
+def user_show(id:int):
     pass
 
 
