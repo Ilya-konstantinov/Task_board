@@ -34,7 +34,6 @@ def user_show(id:int):
 
 @app.route('/leaderboard')
 def leaderboard():
-    context = dict()
     return render_template("leaderboard.html",
                            cur_user = {'id':1, 'is_authenticated': 0},
                            users = db.leaderboard(),
