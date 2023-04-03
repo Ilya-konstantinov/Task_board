@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-left: auto; margin-right: auto">
+<table border="1">
+  <caption>Таблица лидеров</caption>
+  <tr>
+    <th>Позиция</th>
+    <th>Имя</th>
+    <th>Очки</th>
+  </tr>
+  {% for user in users %}
+    <tr>
+      <td {% if curren_user.id == user.id %} style="font-weight: bold" {% endif %}  >{{ user.num }}</td> <td> <a href="/user/{{ user.id }}"> {{ user.name }}</a> </td><td>{{ user.score }}</td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}
