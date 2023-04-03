@@ -10,8 +10,8 @@
     <th>Очки</th>
   </tr>
   {% for user in users %}
-    <tr>
-      <td {% if curren_user.id == user.id %} style="font-weight: bold" {% endif %}  >{{ user.num }}</td> <td> <a href="/user/{{ user.id }}"> {{ user.name }}</a> </td><td>{{ user.score }}</td>
+    <tr {% if cur_user.id == user.user_id %} style="font-weight: bold" {% endif %}  >
+      <td >{{ user.num }}</td> <td> <a href="/user/{{ user.user_id }}"> {{ user.login }}</a> </td><td>{{ user.score }}</td>
     </tr>
   {% endfor %}
 </table>

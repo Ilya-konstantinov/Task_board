@@ -10,9 +10,10 @@ class DataBase:
         def connect(self,*args, **kwargs):
             conn = self.engine.cursor()
             # trans = conn.begin()
-            func_to_decr(self, conn, *args, **kwargs)
+            ans = func_to_decr(self, conn, *args, **kwargs)
             # trans.commit()
             conn.close()
+            return ans
         return connect
 
     @db_connect
@@ -72,7 +73,13 @@ class DataBase:
     @db_connect
     def leaderboard(self, cur) :
         cur.execute("SELECT * FROM users ORDER BY score;")
-        for i in cur: print(i)
+        ans = list()
+        for i, row in enumerate(cur):
+            ans.append(dict())
+            ans[i]['num'] = i+1
+            for name, field in zip(cur.column_names, row):
+                ans[i][name] = field
+        return ans
 
     def get_all_users(self):  # Получить список информации о всех пользователях
         cur = self.engine.connect()  # Подключаемся к базе
