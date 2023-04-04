@@ -68,7 +68,18 @@ class DataBase:
         tasks_aval_table = cur.execute(text("SELECT FROM tasks WHERE task_id <> 0"))
         tasks = [dict(row) for row in tasks_aval_table]
         return tasks
+    @db_connect
+    def task_list(self, cur, owner_id):
+        if (not str(owner_id).isdigit()):
+            return 'error'
 
+        cur.execute(text(f"SELECT task_id, reward_id, task_description, time_to_complete, difficulty_level, reward_name FROM tasks WHERE user_id == {owner_id} "))
+        ans = list()
+        for i, row in enumerate(cur):
+            ans.append(dict())
+            for name, field in zip(cur.column_names, row):
+                ans[i][name] = field
+        return ans
 
     @db_connect
     def leaderboard(self, cur) :
