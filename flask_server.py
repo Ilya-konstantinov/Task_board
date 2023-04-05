@@ -95,8 +95,8 @@ def login():
 
         return redirect(url_for('index'))
 
-@app.route('/layout')
-def layout():
+@app.route('/logout')
+def logout():
     authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     return redirect(url_for('index'))
 

@@ -14,7 +14,7 @@
     <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="#">Наше приложение</a>
         {% if cur_user.is_authenticated %}
-            <a class="navbar-brand" href="/logout">{{ cur_user.name }}</a>
+            <a class="navbar-brand" href="url_for('logout')">{{ cur_user.name }}</a>
             <a class="navbar-brand" href="url_for('taskboard', owner_id = cur_user.id"> Мои задания </a>
         {% else %}
             <p>
