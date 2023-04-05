@@ -1,0 +1,9 @@
+{% extended 'base.html' %}
+
+{% block content %}
+<h2>{{ task.task_title }}</h2>
+<img src="../statics/task_pic/{{ task.origin_id }}" alt = 'Какая-то ошибка'>
+{{ task.task_description }}
+Сложность: {{ task.difficulty_level }}
+Награда: <a href = '../../item/{{ task.reward_id }}'></a>
+{% endblosk %}

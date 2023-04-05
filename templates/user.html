@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<img src="../statics/pictures/{% if  %}{% endif %{" alt="Нет картинки">
+<img src="../statics/pictures/{% if user.pic_path != ''  %}{{ user.pic_path }}{% else %}base_avatar{% endif %}.png" alt="Нет картинки">
 {{ user.login }}
 {{ user.score }}
 {% endblock %}

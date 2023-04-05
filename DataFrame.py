@@ -58,27 +58,22 @@ class DataBase:
         cur.execute = ("DELETE FROM tasks WHERE task_id = %s", task_id)
 
     @db_connect
-    def task_available(self, cur) -> list[int]:
-        tasks_aval_table = cur.execute(text("SELECT FROM tasks WHERE task_id = 0"))
-        tasks = [dict(row) for row in tasks_aval_table]
-        return tasks
-
-    @db_connect
-    def task_not_available(self, cur) -> list[int]:
-        tasks_aval_table = cur.execute(text("SELECT FROM tasks WHERE task_id <> 0"))
-        tasks = [dict(row) for row in tasks_aval_table]
-        return tasks
-    @db_connect
     def task_list(self, cur, owner_id):
         if (not str(owner_id).isdigit()):
             return 'error'
 
-        cur.execute(text(f"SELECT task_id, reward_id, task_description, time_to_complete, difficulty_level, reward_name FROM tasks WHERE user_id == {owner_id} "))
+        cur.execute(text(f"SELECT task_id, reward_id, task_description, origin_id, difficulty_level, reward_name FROM tasks WHERE user_id == {owner_id} "))
         ans = list()
         for i, row in enumerate(cur):
             ans.append(dict())
             for name, field in zip(cur.column_names, row):
                 ans[i][name] = field
+
+        for i in range(len(ans)):
+            cur.execute(text(f'SELECT time_to_complite from tasks_base WHERE task_id == {ans[i]["origin_id"]}'))
+            for row in cur:
+                ans[i]['time_to_complite'] = row[0]
+
         return ans
 
     @db_connect
@@ -86,18 +81,20 @@ class DataBase:
         cur.execute("SELECT * FROM users ORDER BY score;")
         ans = list()
         for i, row in enumerate(cur):
+            if (i == 0): continue
             ans.append(dict())
             ans[i]['num'] = i+1
             for name, field in zip(cur.column_names, row):
                 ans[i][name] = field
         return ans
 
-    def get_all_users(self):  # Получить список информации о всех пользователях
-        cur = self.engine.connect()  # Подключаемся к базе
-        all_users_table = cur.execute("select * from user")  # Выполняем запрос и получаем таблицу с результатов
-        cur.close()  # Закрываем подключение к базе
-        all_users = [dict(row) for row in all_users_table]  # Создаем список строк из таблицы
-        return all_users
+    @db_connect
+    def get_user(self, cur, login:str, pwd_hash:str):
+        cur.execute(f'SELECT * FROM users WHERE login = {login} and pwd_hash = {pwd_hash}')
+        if (len(cur) != 1):
+            return []
+        else:
+            return {title: val for title, val in zip(cur.colomn_column_names, cur[0])}
 
 if __name__ == "__main__":
     db = DataBase(username = "root", passwd = "iliyakonQ1W2", db_name = "cshse_40")

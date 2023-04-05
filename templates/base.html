@@ -9,26 +9,29 @@
           crossorigin="anonymous">
     <title>{{ title }}</title>
 </head>
-<body>
+<body style = 'background-image: url(../statics/pictures/backgroung_taskboard.jpg);background-size: unset;background-repeat: inherit;'>
 <header>
     <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="#">Наше приложение</a>
         {% if cur_user.is_authenticated %}
             <a class="navbar-brand" href="/logout">{{ cur_user.name }}</a>
-            <a class="navbar-brand" href="/task_board/{{ cur_user.id }}"> Мои задания </a>
+            <a class="navbar-brand" href="url_for('taskboard', owner_id = cur_user.id"> Мои задания </a>
         {% else %}
             <p>
-                <a class="btn btn-primary " href="/register">Зарегистрироваться</a>
-                <a class="btn btn-success" href="/login">Войти</a>
+                <a class="btn btn-primary " href="{{ url_for('register') }}">Зарегистрироваться</a>
+                <a class="btn btn-success" href="{{ url_for('login') }}">Войти</a>
             </p>
         {% endif %}
-        <a class="navbar-brand" href="/leaderboard/"> Таблица лидеров </a>
-        <a class="navbar-brand" href="/task_board/0"> Доступные Задания </a>
+        <a class="navbar-brand" href="{{ url_for('leaderboard') }}"> Таблица лидеров </a>
+        <a class="navbar-brand" href="{{ url_for('taskboard', owner_id = 0 }}"> Доступные Задания </a>
     </nav>
 </header>
 <!-- Begin page content -->
+<!-- url_for принимает функцию фласка -->
 <main role="main" class="container">
-    {% block content %}{% endblock %}
+    <div style = 'style="margin-left: 10%; margin-right: 10%; margin-top: 10%; margin-bottom: 10%;" '>
+        {% block content %}{% endblock %}
+    </div>
 </main>
 </body>
 </html>
