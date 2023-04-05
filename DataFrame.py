@@ -70,12 +70,15 @@ class DataBase:
         base_task['reward_id'] = rd(1, rewards_size(cur))
         base_task['reward_title'] = cur.execute('SELECT title FROM items WHERE item_id = %s', base_task['reward_id'])
 
+        with open(f'../statics/discriptions/{origin_id}.txt') as f:
+            base_task['description'] = f.read()[:30]
+
         cur.execute("INSERT INTO tasks("
                     "user_id, task_title, task_description, difficulty_level,"
                     "reward_id, reward_name, origin_id) "
                     "VALUES("
                     "0, %s, %s, %s, %s, %s, %s"
-                    ")", base_task['title'], base_task['description_path'], base_task['difficulty_level'],
+                    ")", base_task['title'], base_task['description'], base_task['difficulty_level'],
                     base_task['reward_id'], base_task['reward_title'], origin_id)
 
     @db_connect
