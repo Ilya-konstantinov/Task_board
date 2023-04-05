@@ -7,5 +7,11 @@
         <p>Награда: <a href="/item/{{ item_id }}">{{ reward_name }}</a></p>
         <p>Сложность: {{ difficulty_level }}/5</p>
         <p>Время на выполнение: {{ time_to_complete }}</p>
-        <input type = 'submit' disabled value="Принять задание">
+        {% if user_id == 0 %}
+                <input name = 'accetp_task' type = 'submit' value="Принять задание">
+        {% else %}
+                {% if user_id == cur_user.user_id %}
+                        <input name = 'drop_task' type = 'submit' value="Отказаться от задания">
+                {% endif %}
+        {% endif %}
 {% endblosk %}

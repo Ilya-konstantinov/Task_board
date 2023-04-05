@@ -43,16 +43,13 @@ class DataBase:
         return connect
 
     @db_connect
-    def user_create(self, cur, login: str, pwd_hash: str, score: int = 0, pic_path:str = '') -> None:
-        cur.execute(text(f"INSERT INTO users(login, pwd_hash, score, pic_path) VALUES(\"{login}\",\"{pwd_hash}\", {score}, \'{pic_path}\')"))
+    def user_create(self, cur, login: str, pwd_hash: str, score: int = 0, pic_path: str = '') -> None:
+        cur.execute("INSERT INTO users(login, pwd_hash, score, pic_path) VALUES(%s, %s, %s, %s)", login, pwd_hash,
+                    score, pic_path)
 
     @db_connect
     def user_delete(self, cur, user_id: int) -> None:
         cur.execute("DELETE FROM users WHERE user_id = %s", user_id)
-
-    @db_connect
-    def user_update(self, cur) -> None:
-        pass
 
     @db_connect
     def add_score(self, cur, user_id: int, score: int) -> None:
@@ -68,7 +65,7 @@ class DataBase:
     def task_create(self, cur, origin_id: int = None) -> None:
         if (origin_id is None):
             origin_id = rd(0, origin_task_size(cur))
-        base_task = fetchall(cur.execute("SELECT * FROM tasks_base WHERE task_id = %s", origin_id))
+        base_task = fetchall(cur.execute("SELECT * FROM tasks_base WHERE task_id = %s", origin_id))[0]
         base_task['difficulty_level'] = rd(1, 5)
         base_task['reward_id'] = rd(1, rewards_size(cur))
         base_task['reward_title'] = cur.execute('SELECT title FROM items WHERE item_id = %s', base_task['reward_id'])
@@ -80,8 +77,6 @@ class DataBase:
                     "0, %s, %s, %s, %s, %s, %s"
                     ")", base_task['title'], base_task['description_path'], base_task['difficulty_level'],
                     base_task['reward_id'], base_task['reward_title'], origin_id)
-
-    # user_id, task_title, task_description, difficulty_level, picture_path, time_to_complete, reward_id, reward_name
 
     @db_connect
     def task_end(self, cur, user_id, task_id) -> None:
@@ -97,8 +92,9 @@ class DataBase:
         if not str(owner_id).isdigit():
             return 'error'
 
-        cur.execute(text(
-            f"SELECT task_id, reward_id, task_description, origin_id, difficulty_level, reward_name FROM tasks WHERE user_id == {owner_id} "))
+        cur.execute(
+            "SELECT task_id, reward_id, task_description, origin_id, difficulty_level, reward_name FROM tasks WHERE user_id == %s ",
+            owner_id)
         ans = fetchall(cur)
         for i in range(len(ans)):
             cur.execute(text(f'SELECT time_to_complite from tasks_base WHERE task_id == {ans[i]["origin_id"]}'))
@@ -108,16 +104,24 @@ class DataBase:
 
     @db_connect
     def leaderboard(self, cur):
-        cur.execute("SELECT * FROM users ORDER BY score;")
+        cur.execute("SELECT * FROM users ORDER BY score LIMIT 50;")
         return fetchall(cur)
 
     @db_connect
     def get_user(self, cur, login: str, pwd_hash: str):
-        cur.execute(f'SELECT * FROM users WHERE login = {login} and pwd_hash = {pwd_hash}')
-        if (len(cur) != 1):
+        ans = fetchall(cur.execute('SELECT * FROM users WHERE login = %s and pwd_hash = %s', login, pwd_hash))
+        if len(cur) != 1:
             return []
         else:
-            return {title: val for title, val in zip(cur.colomn_names, cur[0])}
+            return ans[0]
+
+    @db_connect
+    def get_task(self, cur, task_id):
+        return fetchone(cur.execute("SELECT * FROM tasks WHERE task_id = %s", task_id))
+
+    @db_connect
+    def task_reboot(self, cur, task_id):
+        cur.execute("UPDATE FROM tasks SET user_id = 0 WHERE task_id = %s", task_id)
 
 
 if __name__ == "__main__":
