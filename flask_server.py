@@ -32,6 +32,11 @@ def index():
         authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     return redirect('/taskboard/0')
 
+@app.route('/task/<int:task_id>', methods = ['POST', 'GET'])
+def task(task_id: int):
+    if (request.method == 'post'):
+        db.user_task_connect(user_id=authenticated_user[request.remote_addr]['user_id'], task_id=task_id)
+        return redirect(url_for(taskboard, authenticated_user[request.remote_addr]['user_id'] ))
 
 @app.route('/user/<int:id>')
 def user_show(id:int):

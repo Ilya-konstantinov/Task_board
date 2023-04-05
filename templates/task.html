@@ -1,9 +1,11 @@
 {% extended 'base.html' %}
 
 {% block content %}
-<h2>{{ task.task_title }}</h2>
-<img src="../statics/task_pic/{{ task.origin_id }}" alt = 'Какая-то ошибка'>
-{{ task.task_description }}
-Сложность: {{ task.difficulty_level }}
-Награда: <a href = '../../item/{{ task.reward_id }}'></a>
+        <img src="../statics/icons/{{ origin_id }}.png" alt="Nothing here">
+        <p style = 'font-size: large; font-weight: bold;'>{{ task_title }}</p><br>
+        <p style="font-size: medium ;" >{{task_description}}</p> <br>
+        <p>Награда: <a href="/item/{{ item_id }}">{{ reward_name }}</a></p>
+        <p>Сложность: {{ difficulty_level }}/5</p>
+        <p>Время на выполнение: {{ time_to_complete }}</p>
+        <input type = 'submit' disabled value="Принять задание">
 {% endblosk %}
