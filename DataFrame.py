@@ -74,13 +74,12 @@ class DataBase:
         base_task['reward_title'] = cur.execute('SELECT title FROM items WHERE item_id = %s', base_task['reward_id'])
 
         cur.execute("INSERT INTO tasks("
-                    "user_id, task_title, task_description, difficulty_level, picture_path,"
-                    "time_to_complete, reward_id, reward_name) "
+                    "user_id, task_title, task_description, difficulty_level,"
+                    "reward_id, reward_name, origin_id) "
                     "VALUES("
-                    "0, %s, %s, %s, %s, %s, %s, %s"
+                    "0, %s, %s, %s, %s, %s, %s"
                     ")", base_task['title'], base_task['description_path'], base_task['difficulty_level'],
-                    base_task['picture_path'], base_task['time_to_complete'] * base_task['difficulty_level'],
-                    base_task['reward_id'], base_task['reward_title'])
+                    base_task['reward_id'], base_task['reward_title'], origin_id)
 
     # user_id, task_title, task_description, difficulty_level, picture_path, time_to_complete, reward_id, reward_name
 
