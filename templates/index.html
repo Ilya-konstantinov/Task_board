@@ -1,4 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<div style="margin-left: 10%; margin-right: 10%; margin-top: 10%; margin-bottom: 10%;" >
+  {% for task in task_list %}
+  <a href = 'http://40.cshse.beget.tech/task/{{ task.task_id }} ' style="background-size: cover; background-repeat: round; background-image: url(../static/pictures/skipitr.jpg); left: {{ task.position_y }}%; top: {{ task.position_x }}%;position: absolute; " > {{ task.task_title }}
+      <div style="margin-top: 10%;margin-left: 10%;margin-right: 10%;margin-bottom: 15%;">
+        <p> {{ task.task_description }} </p>
+        <p> {{ task.time_to_complete }} {{ task.difficulty_level }}</p>
+        {{ task.reward_name }} <!-- <img src = "../static/icons/{{ task.task_id }}.png" alt="X" style="height: 10%; width: 10%;" > -->
+      </div>
+  </a>
+  {% endfor %}
+</div>
+
 {% endblock %}
