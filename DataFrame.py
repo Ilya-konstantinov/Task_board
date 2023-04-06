@@ -28,13 +28,13 @@ def origin_task_size(cur) -> int:
     return len(fetchall(cur))
 
 
-def rewards_size(cur) -> int:
+def rewards_size(cur):
     cur.execute("SELECT * FROM items_base;")
     return len(fetchall(cur))
 
 
 class DataBase:
-    def __init__(self, username: str, passwd: str, db_name: str):
+    def __init__(self, username, passwd, db_name):
         self.cnx = connect(host='localhost', passwd=passwd, username=username, database=db_name)
 
     def db_connect(func_to_decr):
@@ -48,22 +48,22 @@ class DataBase:
         return connect
 
     @db_connect
-    def user_create(self, cur, login: str, pwd_hash: str, score: int = 0, pic_path: str = '') -> None:
+    def user_create(self, cur, login, pwd_hash, score = 0, pic_path = '') -> None:
         cur.execute(
             f"INSERT INTO users(login, pwd_hash, score, pic_path) VALUES(\"{login}\", \"{pwd_hash}\", {score}, \"{pic_path}\")")
 
     @db_connect
-    def add_score(self, cur, user_id: int, score: int) -> None:
+    def add_score(self, cur, user_id, score):
         cur.execute(f"SELECT score FROM users WHERE user_id = {user_id}")
         post_score = fetchone(cur)
         cur.execute(f"UPDATE users SET score = {post_score + score} WHERE user_id = {user_id}")
 
     @db_connect
-    def user_task_connect(self, cur, user_id: int, task_id: int):
+    def user_task_connect(self, cur, user_id, task_id):
         cur.execute(f'UPDATE tasks SET user_id = {user_id} WHERE task_id = {task_id}')
 
     @db_connect
-    def task_create(self, cur, origin_id: int = None) -> None:
+    def task_create(self, cur, origin_id = None):
         if (origin_id is None):
             origin_id = rd(1, origin_task_size(cur))
         cur.execute(f"SELECT * FROM tasks_base WHERE task_id = {origin_id}")
@@ -84,7 +84,7 @@ class DataBase:
                     f"{base_task['reward_id']}, \"{base_task['reward_title']}\", {base_task['time_to_complete'] * base_task['difficulty_level']}, {origin_id}"
                     ")")
     @db_connect
-    def reward_create(self, cur, dif_level: int = None, origin_id: int = None):
+    def reward_create(self, cur, dif_level = None, origin_id = None):
         if origin_id is None:
             origin_id = rd(1, rewards_size(cur))
         if dif_level is None:
@@ -98,7 +98,7 @@ class DataBase:
         return ans
 
     @db_connect
-    def task_end(self, cur, user_id, task_id) -> None:
+    def task_end(self, cur, user_id, task_id):
         cur.execute(f'SELECT reward_id FROM tasks WHERE task_id = {task_id}')
         if len(fetchall(cur)) != 1:
             return
@@ -125,12 +125,12 @@ class DataBase:
         return ans
 
     @db_connect
-    def leaderboard(self, cur, limit: int = 50):
+    def leaderboard(self, cur, limit = 50):
         cur.execute(f"SELECT * FROM users ORDER BY score DESC LIMIT {limit} OFFSET 1;")
         return fetchall(cur)
 
     @db_connect
-    def get_user(self, cur, login: str, pwd_hash: str):
+    def get_user(self, cur, login, pwd_hash):
         cur.execute(f'SELECT * FROM users WHERE login = \"{login}\" and pwd_hash = \"{pwd_hash}\";')
         ans = fetchall(cur)
         if len(ans) != 1:
