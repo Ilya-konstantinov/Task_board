@@ -167,4 +167,5 @@ def task_gen():
 
 if __name__ == "__main__":  # Запуск приложения при вызове модуля
     task_gen()
-    app.run()
+    port = int(os.environ.get("PORT", 6000))
+    app.run(host='0.0.0.0', port=port)
