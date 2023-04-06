@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form action="/" method="post">
+<form action="/{{ method }}" method="post">
   Логин:
-  <input name="login" ><br>
+  <input name="lgn" ><br>
   Пароль:
   <input name="psd" type="password"><br>
-  <input type="submit" value="Принять">
+  <input name = 'accetp' type="submit" value="Принять">
 </form>
 {% endblock %}

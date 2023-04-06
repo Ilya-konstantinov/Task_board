@@ -1,10 +1,12 @@
 from mysql.connector import connect
-from sqlalchemy import create_engine, text
+import os
 from random import randint as rd
 
 
 def fetchall(cur):
     ans = []
+    if cur is None:
+        return []
     for i, row in enumerate(cur):
         ans.append(dict())
         ans[-1]['num'] = i
@@ -14,29 +16,32 @@ def fetchall(cur):
 
 
 def fetchone(cur):
+    if cur is None:
+        return None
     for row in cur:
         for field in row:
             return field
 
 
-def origin_task_size(cur):
-    return len(fetchall(cur.execute("SELECT * FROM task_base")))
+def origin_task_size(cur) -> int:
+    cur.execute("SELECT * FROM tasks_base;")
+    return len(fetchall(cur))
 
 
 def rewards_size(cur) -> int:
-    return len(fetchall(cur.execute("SELECT * FROM item_base")))
+    cur.execute("SELECT * FROM items_base;")
+    return len(fetchall(cur))
 
 
 class DataBase:
     def __init__(self, username: str, passwd: str, db_name: str):
-        self.engine = connect(host='localhost', passwd=passwd, username=username, database=db_name)
+        self.cnx = connect(host='localhost', passwd=passwd, username=username, database=db_name)
 
     def db_connect(func_to_decr):
         def connect(self, *args, **kwargs):
-            conn = self.engine.cursor()
-            # trans = conn.begin()
+            conn = self.cnx.cursor()
             ans = func_to_decr(self, conn, *args, **kwargs)
-            # trans.commit()
+            self.cnx.commit()
             conn.close()
             return ans
 
@@ -44,51 +49,65 @@ class DataBase:
 
     @db_connect
     def user_create(self, cur, login: str, pwd_hash: str, score: int = 0, pic_path: str = '') -> None:
-        cur.execute("INSERT INTO users(login, pwd_hash, score, pic_path) VALUES(%s, %s, %s, %s)", login, pwd_hash,
-                    score, pic_path)
-
-    @db_connect
-    def user_delete(self, cur, user_id: int) -> None:
-        cur.execute("DELETE FROM users WHERE user_id = %s", user_id)
+        cur.execute(
+            f"INSERT INTO users(login, pwd_hash, score, pic_path) VALUES(\"{login}\", \"{pwd_hash}\", {score}, \"{pic_path}\")")
 
     @db_connect
     def add_score(self, cur, user_id: int, score: int) -> None:
-        post_score = cur.execute("SELECT score FROM users WHERE user_id = %s", score)
-        post_score = [row for row in post_score][0]
-        cur.execute("UPDATE users SET score = %s WHERE user_id = %s", post_score + score, user_id)
+        cur.execute(f"SELECT score FROM users WHERE user_id = {user_id}")
+        post_score = fetchone(cur)
+        cur.execute(f"UPDATE users SET score = {post_score + score} WHERE user_id = {user_id}")
 
     @db_connect
     def user_task_connect(self, cur, user_id: int, task_id: int):
-        cur.execute('UPDATE tasks SET owner_id = %s WHERE task_id = %s', user_id, task_id)
+        cur.execute(f'UPDATE tasks SET user_id = {user_id} WHERE task_id = {task_id}')
 
     @db_connect
     def task_create(self, cur, origin_id: int = None) -> None:
         if (origin_id is None):
-            origin_id = rd(0, origin_task_size(cur))
-        base_task = fetchall(cur.execute("SELECT * FROM tasks_base WHERE task_id = %s", origin_id))[0]
+            origin_id = rd(1, origin_task_size(cur))
+        cur.execute(f"SELECT * FROM tasks_base WHERE task_id = {origin_id}")
+        base_task = fetchall(cur)[0]
         base_task['difficulty_level'] = rd(1, 5)
-        base_task['reward_id'] = rd(1, rewards_size(cur))
-        base_task['reward_title'] = cur.execute('SELECT title FROM items WHERE item_id = %s', base_task['reward_id'])
-
-        with open(f'../statics/discriptions/{origin_id}.txt') as f:
+        base_task['reward_id'] = self.reward_create(dif_level=base_task['difficulty_level'])
+        cur.execute(f'SELECT item_name FROM items WHERE item_id = {base_task["reward_id"]}')
+        base_task['reward_title'] = fetchone(cur)
+        path = os.path.dirname(os.path.abspath(__file__)) + f'\\static\\discriptions\\{origin_id}.txt'
+        with open(path, encoding='utf-8') as f:
             base_task['description'] = f.read()[:30]
 
         cur.execute("INSERT INTO tasks("
                     "user_id, task_title, task_description, difficulty_level,"
-                    "reward_id, reward_name, origin_id) "
+                    "reward_id, reward_name, time_to_complete, origin_id) "
                     "VALUES("
-                    "0, %s, %s, %s, %s, %s, %s"
-                    ")", base_task['title'], base_task['description'], base_task['difficulty_level'],
-                    base_task['reward_id'], base_task['reward_title'], origin_id)
+                    f"0, \"{base_task['title']}\", \"{base_task['description']}\", {base_task['difficulty_level']}, "
+                    f"{base_task['reward_id']}, \"{base_task['reward_title']}\", {base_task['time_to_complete'] * base_task['difficulty_level']}, {origin_id}"
+                    ")")
+    @db_connect
+    def reward_create(self, cur, dif_level: int = None, origin_id: int = None):
+        if origin_id is None:
+            origin_id = rd(1, rewards_size(cur))
+        if dif_level is None:
+            difficulty_level = rd(1, 5)
+
+        cur.execute(f"SELECT * FROM items_base WHERE item_id = {origin_id}")
+        base_item = fetchall(cur)[0]
+        cur.execute(f"INSERT INTO items(item_name, owner_id, item_description, score) VALUES(\"{base_item['item_name']}\", 0, \"{base_item['item_description']}\", {base_item['score'] * dif_level})")
+        cur.execute('SELECT item_id FROM items')
+        ans = fetchall(cur)[-1]['item_id']
+        return ans
 
     @db_connect
     def task_end(self, cur, user_id, task_id) -> None:
-        cur.execute('SELECT reward_id FROM tasks WHERE task_id = %s', task_id)
+        cur.execute(f'SELECT reward_id FROM tasks WHERE task_id = {task_id}')
+        if len(fetchall(cur)) != 1:
+            return
+        cur.execute(f'SELECT reward_id FROM tasks WHERE task_id = {task_id}')
         reward_id = fetchone(cur)
-        cur.execute('SELECT score FROM items WHERE item_id = %s', reward_id)
+        cur.execute(f'SELECT score FROM items WHERE item_id = {reward_id}')
         score_add = fetchone(cur)
-        self.add_score(cur=cur, user_id=user_id, score=score_add)
-        cur.execute("DELETE FROM tasks WHERE task_id = %s", task_id)
+        self.add_score(user_id=user_id, score=score_add)
+        cur.execute(f"DELETE FROM tasks WHERE task_id = {task_id}")
 
     @db_connect
     def task_list(self, cur, owner_id):
@@ -96,73 +115,95 @@ class DataBase:
             return 'error'
 
         cur.execute(
-            "SELECT task_id, reward_id, task_description, origin_id, difficulty_level, reward_name FROM tasks WHERE user_id == %s ",
-            owner_id)
+            f"SELECT * FROM tasks WHERE user_id={owner_id};"
+        )
         ans = fetchall(cur)
         for i in range(len(ans)):
-            cur.execute(text(f'SELECT time_to_complite from tasks_base WHERE task_id == {ans[i]["origin_id"]}'))
+            cur.execute(f'SELECT time_to_complete from tasks_base WHERE task_id = {ans[i]["origin_id"]};')
             ans[i]['time_to_complite'] = fetchone(cur)
 
         return ans
 
     @db_connect
-    def leaderboard(self, cur):
-        cur.execute("SELECT * FROM users ORDER BY score LIMIT 50;")
+    def leaderboard(self, cur, limit: int = 50):
+        cur.execute(f"SELECT * FROM users ORDER BY score DESC LIMIT {limit} OFFSET 1;")
         return fetchall(cur)
 
     @db_connect
     def get_user(self, cur, login: str, pwd_hash: str):
-        ans = fetchall(cur.execute('SELECT * FROM users WHERE login = %s and pwd_hash = %s', login, pwd_hash))
-        if len(cur) != 1:
+        cur.execute(f'SELECT * FROM users WHERE login = \"{login}\" and pwd_hash = \"{pwd_hash}\";')
+        ans = fetchall(cur)
+        if len(ans) != 1:
             return []
         else:
             return ans[0]
 
     @db_connect
     def get_task(self, cur, task_id):
-        return fetchone(cur.execute("SELECT * FROM tasks WHERE task_id = %s", task_id))
+        cur.execute(f"SELECT * FROM tasks WHERE task_id = {task_id};")
+        ans = fetchall(cur)[0]
+        path = os.path.dirname(os.path.abspath(__file__)) + f"\\static\\discriptions\\{ans['origin_id']}.txt"
+        with open(path, encoding='utf-8') as f:
+            ans['task_description'] = f.read()
+
+        return ans
+
+    @db_connect
+    def get_item(self, cur, item_id):
+        cur.execute(f"SELECT * FROM items WHERE item_id = {item_id};")
+        return fetchall(cur)[0]
 
     @db_connect
     def task_reboot(self, cur, task_id):
-        cur.execute("UPDATE FROM tasks SET user_id = 0 WHERE task_id = %s", task_id)
+        cur.execute(f"DELETE FROM tasks WHERE task_id = {task_id};")
 
+    @db_connect
+    def user_drop(self, cur, user_id):
+        cur.execute(f'DELETE FROM users WHERE user_id = {user_id};')
 
 if __name__ == "__main__":
-    db = DataBase(username="root", passwd="iliyakonQ1W2", db_name="cshse_40")
+    db = DataBase(username="root", passwd="iliyakonQ1W2", db_name="cshse_40_2")
     s = """
-    1.user_create(self, cur, login: str, pwd_hash: str )
-    2.user_delete(self, cur, user_id: int)
-    3.user_update(self, cur)
-    4.add_item(self, cur, user_id:int, item_id:int)
-    5.task_create(self, cur, task_id : int = None)
-    6.task_end(self, cur, task_id)
-    7.task_available(self, cur)
-    8.task_not_available(self, cur)
-    9.leaderboard(self, cur)
-    10. get_all_users(self, cur)
-    11. Выход
+    1. user_create login: str pwd_hash: str score: int = 0 pic_path: str = ''
+    2. add_score user_id: int score: int 
+    3. user_task_connect user_id: int task_id: int
+    4. task_create origin_id: int = None
+    5. reward_create difficulty_level:int = None origin_id:int = None
+    6. task_end user_id task_id
+    7. task_list owner_id
+    8. leaderboard limit:int = 50
+    9. get_user login: str, pwd_hash: str
+    10. get_task cur task_id
+    11. task_reboot task_id
+    12. get_item item_id
+    13. user_drop user_id
+    0. Выход
     """
     c = input(s).split()
-    while (c[0] != '11'):
+    while c[0] != '0':
         match c[0]:
             case '1':
-                db.user_create(login=c[1], pwd_hash=c[2])
+                db.user_create(c[1], c[2])
             case '2':
-                db.user_delete(user_id=int(c[1]))
+                db.add_score(int(c[1]), int(c[2]))
             case '3':
-                pass
+                db.user_task_connect(int(c[1]), int(c[2]))
             case '4':
-                db.add_item(user_id=int(c[1]), item_id=int(c[2]))
-            case '5':
                 db.task_create()
+            case '5':
+                print(db.reward_create())
             case '6':
-                db.task_end(task_id=int(c[1]))
+                db.task_end(int(c[1]), int(c[2]))
             case '7':
-                print(db.task_available())
+                print(db.task_list(owner_id=int(c[1])))
             case '8':
-                print(db.task_not_available())
+                print(*db.leaderboard())
             case '9':
-                print(db.leaderboard())
+                print(db.get_user(c[1], c[2]))
             case '10':
-                print(db.get_all_users())
+                print(db.get_task(int(c[1])))
+            case '11':
+                print(db.task_reboot(int(c[1])))
+            case '12':
+                print(db.get_item(item_id=int(c[1])))
         c = input(s).split()

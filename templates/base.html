@@ -9,21 +9,21 @@
           crossorigin="anonymous">
     <title>{{ title }}</title>
 </head>
-<body style = 'background-image: url(../statics/pictures/backgroung_taskboard.jpg);background-size: unset;background-repeat: inherit;'>
+<body style = 'background-image: url(../static/pictures/background_taskboard.jpg);background-size: unset;background-repeat: inherit;'>
 <header>
     <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="#">Наше приложение</a>
+        <a class="navbar-brand" href="{{ url_for('leaderboard') }}"> Таблица лидеров </a>
+        <a class="navbar-brand" href="{{ url_for('taskboard', owner_id = 0) }}"> Доступные Задания </a>
         {% if cur_user.is_authenticated %}
-            <a class="navbar-brand" href="url_for('logout')">{{ cur_user.name }}</a>
-            <a class="navbar-brand" href="url_for('taskboard', owner_id = cur_user.id"> Мои задания </a>
+            <a class="navbar-brand" href="{{ url_for('logout') }}">{{ cur_user.name }}</a>
+            <a class="navbar-brand" href="{{ url_for('taskboard', owner_id = cur_user.user_id )}} "> Мои задания </a>
         {% else %}
             <p>
                 <a class="btn btn-primary " href="{{ url_for('register') }}">Зарегистрироваться</a>
                 <a class="btn btn-success" href="{{ url_for('login') }}">Войти</a>
             </p>
         {% endif %}
-        <a class="navbar-brand" href="{{ url_for('leaderboard') }}"> Таблица лидеров </a>
-        <a class="navbar-brand" href="{{ url_for('taskboard', owner_id = 0 }}"> Доступные Задания </a>
     </nav>
 </header>
 <!-- Begin page content -->

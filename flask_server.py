@@ -12,10 +12,12 @@ from flask import request  # Для обработки запросов из ф�
 from flask import redirect  # Для автоматического перенаправления
 import datetime  # Для получения текущей даты и времени
 from flask import flash, url_for
+from random import randint as rd
+from threading import Timer
 
 username = "root"
 passwd = "iliyakonQ1W2"  # lkkjqQ1!
-db_name = "cshse_40"
+db_name = "cshse_40_2"
 
 # Раскомментировать после указания базы, логина и пароля
 
@@ -38,6 +40,9 @@ def taskboard(owner_id):
     if request.remote_addr not in authenticated_user:
         authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     tasks = db.task_list(owner_id)
+    for i, el in enumerate(tasks):
+        tasks[i]['position_y'] = rd(0,100)
+        tasks[i]['position_x'] = rd(0,100)
     if tasks == 'error':
         return 404
     return render_template('index.html',
@@ -50,15 +55,16 @@ def taskboard(owner_id):
 def task(task_id: int):
     if request.remote_addr not in authenticated_user:
         authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
-    if request.method == 'post':
-        if 'accetp_task' in request.form:
+    if request.method == 'POST':
+        if 'accept_task' in request.form:
             db.user_task_connect(user_id=authenticated_user[request.remote_addr]['user_id'], task_id=task_id)
-            return redirect(url_for(taskboard, authenticated_user[request.remote_addr]['user_id']))
+            Timer(db.get_task(task_id=task_id)['time_to_complete'], db.task_end, kwargs={'user_id' : authenticated_user[request.remote_addr]['user_id'], 'task_id' : task_id}).start()
+            return redirect(url_for('taskboard', owner_id = authenticated_user[request.remote_addr]['user_id']))
 
         if 'drop_task' in request.form:
             db.task_reboot(task_id=task_id)
-            db.task_end(task_id=task_id)
-            return redirect(url_for('/'))
+            db.task_end(task_id=task_id, user_id=authenticated_user[request.remote_addr]['user_id'])
+            return redirect(url_for('index'))
 
     return render_template(
         'task.html', **db.get_task(task_id=task_id),
@@ -84,18 +90,36 @@ def leaderboard():
                            title='Список лидеров')
 
 
-# ------------------------------- Регистрация ------------------------------- #
+@app.route('/item/<int:item_id>')
+def item(item_id):
+    if request.remote_addr not in authenticated_user:
+        authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
+    return render_template('item.html',
+                           **db.get_item(item_id=item_id),
+                           cur_user = authenticated_user[request.remote_addr],
+                           title = f'Награда {item_id}')
+
+# <------------------------------- Регистрация -------------------------------> #
 
 
-@app.route('/registr', methods=['POST', 'GET'])
-def registr():
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+    if request.remote_addr not in authenticated_user:
+        authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     if request.method == 'POST':
         if not (request.form['lgn'] != '' and request.form['psd'] != ''):
             flash('Нужно заполнить все формы!')
-            return redirect('/')
+            return redirect('/register')
         else:
-            db.user_create(login=request.form['lgn'], pwd_hash=sha256(request.form['psd']))
+            db.user_create(
+                login=request.form['lgn'],
+                pwd_hash=sha256(request.form['psd'].encode('utf-8')).hexdigest()
+                )
+            login()
+            return redirect(url_for('index'))
+
     return render_template('login.html',
+                           method = 'register',
                            title='Регистрация',
                            cur_user=authenticated_user[request.remote_addr]
                            )
@@ -103,13 +127,15 @@ def registr():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    if request.remote_addr not in authenticated_user:
+        authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     if request.method == 'POST':
         if not (request.form['lgn'] != '' and request.form['psd'] != ''):
             flash('Нужно заполнить все формы!')
-            return redirect('/')
+            return redirect( url_for(login))
         else:
-            user = db.get_user(login=request.form['lgn'], pwd_hash=sha256(request.form['psd']))
-            if user == []:
+            user = db.get_user(login=request.form['lgn'], pwd_hash=sha256(request.form['psd'].encode('utf-8')).hexdigest())
+            if user == list():
                 flash('Введены неверные данные')
                 return redirect('/')
             authenticated_user[request.remote_addr] = {
@@ -120,14 +146,25 @@ def login():
 
         return redirect(url_for('index'))
 
+    return render_template('login.html',
+                           method='login',
+                           title='Авторизация',
+                           cur_user=authenticated_user[request.remote_addr]
+                           )
 
 @app.route('/logout')
 def logout():
     authenticated_user[request.remote_addr] = {'user_id': -1, 'is_authenticated': 0}
     return redirect(url_for('index'))
 
+# <------------------------------- Окончание app.route -------------------------------> #
 
-# ------------------------------- Окончание app.route ------------------------------- #
+
+def task_gen():
+    Timer(8*60*60, task_gen).start()
+    db.task_create()
+
 
 if __name__ == "__main__":  # Запуск приложения при вызове модуля
+    task_gen()
     app.run()

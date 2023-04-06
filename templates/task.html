@@ -1,17 +1,19 @@
-{% extended 'base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
         <img src="../statics/icons/{{ origin_id }}.png" alt="Nothing here">
         <p style = 'font-size: large; font-weight: bold;'>{{ task_title }}</p><br>
         <p style="font-size: medium ;" >{{task_description}}</p> <br>
-        <p>Награда: <a href="/item/{{ item_id }}">{{ reward_name }}</a></p>
+        <p>Награда: <a href="/item/{{ reward_id }}">{{ reward_name }}</a></p>
         <p>Сложность: {{ difficulty_level }}/5</p>
         <p>Время на выполнение: {{ time_to_complete }}</p>
-        {% if user_id == 0 %}
-                <input name = 'accetp_task' type = 'submit' value="Принять задание">
-        {% else %}
-                {% if user_id == cur_user.user_id %}
-                        <input name = 'drop_task' type = 'submit' value="Отказаться от задания">
+        <form method="post" action="{{ url_for('task', task_id = task_id) }}">
+                {% if user_id == 0 and cur_user.is_authenticated %}
+                        <input name = 'accept_task' type = 'submit' value="Принять задание">
+                {% else %}
+                        {% if user_id == cur_user.user_id %}
+                                <input name = 'drop_task' type = 'submit' value="Отказаться от задания">
+                        {% endif %}
                 {% endif %}
-        {% endif %}
-{% endblosk %}
+        </form>
+{% endblock %}
