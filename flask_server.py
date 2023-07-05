@@ -15,8 +15,8 @@ from flask import flash, url_for
 from random import randint as rd
 from threading import Timer
 
-username = "cshse_40"
-passwd = "iliyakonQ1W2"  # lkkjqQ1!
+username = "ilya"
+passwd = ""  # lkkjqQ1!
 db_name = "cshse_40"
 
 # Раскомментировать после указания базы, логина и пароля
